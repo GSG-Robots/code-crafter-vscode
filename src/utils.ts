@@ -1,7 +1,9 @@
-import { request as _request, RequestOptions } from 'http';
+import { request as _http_request, RequestOptions as HTTPRequestOptions } from 'http';
+import { request as _https_request, RequestOptions as HTTPSRequestOptions } from 'https';
 import * as vscode from 'vscode';
 
-export function request(uri: string | RequestOptions | URL): Promise<string> {
+export function request(uri: string | HTTPRequestOptions | HTTPSRequestOptions | URL): Promise<string> {
+    const _request = uri.toString().startsWith('https://') ? _https_request : _http_request;
     return new Promise((resolve, reject) => {
         const req = _request(uri, (res) => {
             let body = '';
@@ -22,7 +24,7 @@ export function request(uri: string | RequestOptions | URL): Promise<string> {
     });
 }
 
-export async function requestJSON(uri: string | RequestOptions | URL): Promise<object> {
+export async function requestJSON(uri: string | HTTPRequestOptions | HTTPSRequestOptions | URL): Promise<object> {
     const data = await request(uri);
     return JSON.parse(data);
 }

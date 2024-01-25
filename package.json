@@ -20,7 +20,15 @@
     "commands": [
       {
         "command": "codecrafter.openTutorial",
-        "title": "Open Tutorial"
+        "title": "Tutorial öffnen"
+      },
+      {
+        "command": "codecrafter.install",
+        "title": "Install CodeCrafter Module"
+      },
+      {
+        "command": "codecrafter.finishTutorial",
+        "title": "Tutorial abschließen"
       }
     ],
     "views": {
@@ -42,6 +50,9 @@
       ]
     }
   },
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
@@ -65,7 +76,9 @@
     "typescript": "^4.8.4"
   },
   "dependencies": {
+    "@types/unzipper": "^0.10.9",
     "showdown": "^2.1.0",
-    "showdown-highlight": "^3.1.0"
+    "showdown-highlight": "^3.1.0",
+    "unzipper": "^0.10.14"
   }
 }

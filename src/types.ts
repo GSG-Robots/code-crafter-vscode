@@ -1,3 +1,7 @@
+export type Maybe<T> = T | undefined;
+
+export type Shouldbe<T> = T | null;
+
 
 export enum DisplayType {
   html,
@@ -5,7 +9,8 @@ export enum DisplayType {
 }
 
 export enum CheckType {
-  ast
+  ast,
+  file_exists
 }
 
 export type JSONTutorialConfig = {
@@ -15,6 +20,7 @@ export type JSONTutorialConfig = {
   };
   checks: {
     type: keyof typeof CheckType;
+    at?: string;
     from?: string;
   }[];
 };
@@ -24,6 +30,7 @@ export type JSONTutorialMeta = {
   author: string;
   version: string;
   description: string;
+  hidden?: boolean;
 };
 
 export type JSONTutorials = {
@@ -39,6 +46,7 @@ export type TutorialMeta = {
   author: string;
   version: string;
   description: string;
+  hidden: boolean;
 };
 
 export type TutorialConfig = {
@@ -48,6 +56,7 @@ export type TutorialConfig = {
   };
   checks: {
     type: CheckType;
+    at?: string;
     from?: string;
   }[];
 };
