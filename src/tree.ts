@@ -1,93 +1,114 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { request } from 'http';
-import { DisplayType, TutorialResult } from './types';
+import { request, requestJSON } from './utils';
+import { DisplayType, JSONTutorialConfig, JSONTutorials, TutorialMeta, TutorialConfig, CheckType } from './types';
+import { display } from './view';
 
 
-export class TutorialProvider implements vscode.TreeDataProvider<Tutorial> {
+export class TutorialProvider implements vscode.TreeDataProvider<TutorialItem> {
   constructor(private baseUri: string) { }
 
-  private getTutorial(id: string): Promise<TutorialResult> {
-    return new Promise((resolve, reject) => {
-      const requestUri = `${this.baseUri}${id}/meta.json`;
-
-      console.log(requestUri);
-
-      request(requestUri, (res) => {
-        let body = '';
-        res.on('data', (chunk) => {
-          body += chunk;
-        });
-
-        res.on('end', () => {
-          console.log(body);
-          const tutorial = JSON.parse(body);
-          const result: TutorialResult = {
-            title: tutorial.title || "Unnamed",
-            author: tutorial.author || "Unknown",
-            version: tutorial.version || "Unknown",
-            description: tutorial.description || "No description provided.",
-            display: {
-              file: tutorial.show.file,
-              type: DisplayType[tutorial.show.type as keyof typeof DisplayType],
-            },
-          };
-          resolve(result);
-        });
-      });
-    });
+  public async openTutorial(id: string) {
+    const tutorialMeta = await this.getTutorialMeta(id);
+    const tutorialConfig = await this.getTutorialConfig(id);
+    const fileContent = await request(`${this.baseUri}${id}/${tutorialConfig.display.file}`);
+    display(fileContent, tutorialConfig.display.type, "codecrafter-tutorial", `Tutorial: ${tutorialMeta.title}`);
   }
 
-  getTreeItem(element: Tutorial): vscode.TreeItem {
+  public async getTutorial(id: string): Promise<TutorialConfig> {
+    const requestUri = `${this.baseUri}${id}/meta.json`;
+    console.log(requestUri);
+
+    const res = await requestJSON(requestUri) as JSONTutorialConfig;
+    const tutorial: TutorialConfig = {
+      display: {
+        file: res.display.file,
+        type: DisplayType[res.display.type],
+      },
+      checks: res.checks.map(check => ({
+        type: CheckType[check.type],
+        from: check.from,
+      })),
+    };
+    return tutorial;
+  }
+
+  getTreeItem(element: TutorialItem): vscode.TreeItem {
     return element;
   }
 
-  getTutorials(): Promise<Tutorial[]> {
-    return new Promise((resolve, reject) => {
-      const requestUri = `${this.baseUri}index.json`;
+  public readonly getTutorialConfig = async (id: string): Promise<TutorialConfig> => {
+    const requestUri = `${this.baseUri}${id}/meta.json`;
+    const res = await requestJSON(requestUri) as JSONTutorialConfig;
+    const tutorial: TutorialConfig = {
+      display: {
+        file: res.display.file,
+        type: DisplayType[res.display.type],
+      },
+      checks: res.checks.map(check => ({
+        type: CheckType[check.type],
+        from: check.from,
+      })),
+    };
+    return tutorial;
+  };
 
+  public readonly getTutorialMeta = async (id: string): Promise<TutorialMeta> => {
+    const tutorialMap = await this.getTutorialsMeta();
+    return tutorialMap[id];
+  };
 
-      request(requestUri, (res) => {
-        let body = '';
-        res.on('data', (chunk) => {
-          body += chunk;
-        });
+  public readonly getTutorialsMeta = async (): Promise<{ [id: string]: TutorialMeta }> => {
+    const requestUri = `${this.baseUri}index.json`;
+    const res = await requestJSON(requestUri) as JSONTutorials;
+    let tutorialMap: { [id: string]: TutorialMeta } = {};
+    for (let [key, tutorial] of Object.entries(res.tutorials)) {
+      const tutorialMeta: TutorialMeta = {
+        id: key,
+        title: tutorial.title || "Unnamed",
+        author: tutorial.author || "Unknown",
+        version: tutorial.version || "Unknown",
+        description: tutorial.description || "No description provided.",
+      };
+      tutorialMap[key] = tutorialMeta;
+    }
+    return tutorialMap;
+  };
 
-        res.on('error', (err) => {
-          reject(err);
-        });
-
-        res.on('end', async () => {
-          console.log(body);
-          const tutorials = JSON.parse(body);
-          let tutorialList: Tutorial[] = [];
-          for (let key of Object.keys(tutorials.tutorials)) {
-            const data: TutorialResult = await this.getTutorial(key);
-            tutorialList.push(new Tutorial(key, data));
-          }
-          resolve(tutorialList);
-        });
-      });
-    });
+  async getTutorials(): Promise<TutorialItem[]> {
+    let tutorialList: TutorialItem[] = [];
+    for (let tutorial of Object.values(await this.getTutorialsMeta())) {
+      tutorialList.push(new TutorialItem(tutorial));
+    }
+    return tutorialList;
   }
 
-  getChildren(element?: Tutorial): Thenable<Tutorial[]> {
+  getChildren(element?: TutorialItem): Thenable<TutorialItem[]> {
     if (element) {
-      return Promise.resolve([]);
+      return element.getChildren();
     } else {
       return this.getTutorials();
     }
   }
 }
 
-class Tutorial extends vscode.TreeItem {
+class TutorialItem extends vscode.TreeItem {
   constructor(
-    public readonly id: string,
-    private readonly data: TutorialResult
+    public readonly meta: TutorialMeta
   ) {
-    super(data.title, vscode.TreeItemCollapsibleState.None);
-    this.description = `${data.author} - ${data.version}}`;
-    this.tooltip = data.description;
+    super(meta.title, vscode.TreeItemCollapsibleState.None);
+    this.description = `${meta.author} - ${meta.version}`;
+    this.tooltip = meta.description;
+  }
+
+  command = {
+    command: 'codecrafter.openTutorial',
+    title: 'Open Tutorial',
+    arguments: [this.meta.id],
+  };
+
+  public async getChildren(): Promise<TutorialItem[]> {
+    return [];
   }
 
   iconPath = {

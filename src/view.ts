@@ -53,10 +53,10 @@ export function displayHTML(
 }
 
 export function display(
+    content: string,
     type: DisplayType = DisplayType.markdown,
     id: string = "codecrafter",
     title: string = "CodeCrafter",
-    content: string,
 ) {
     switch (type) {
         case DisplayType.markdown:
