@@ -7,7 +7,7 @@ import { installCodeCrafter } from './downloader';
 export function activate(context: vscode.ExtensionContext) {
 	console.log('codecrafter activated.');
 
-	const tutorialServer = "http://localhost:5500/";
+	const tutorialServer = "https://codecrafter-tutorials.pages.dev/";
 	const tutorialProvider = new TutorialProvider(tutorialServer);
 	
 	context.subscriptions.push(vscode.window.createTreeView('codecrafter-tutorials', {
