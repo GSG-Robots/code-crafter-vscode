@@ -13,14 +13,14 @@
   "contributes": {
     "viewsWelcome": [
       {
-        "view": "codecrafter",
-        "contents": "Please wait until tutorials are loaded..."
+        "view": "codecrafter-tutorials",
+        "contents": "Loading..."
       }
     ],
     "commands": [
       {
-        "command": "codecrafter.helloWorld",
-        "title": "Hello World"
+        "command": "codecrafter.openTutorial",
+        "title": "Open Tutorial"
       }
     ],
     "views": {
